@@ -1,0 +1,36 @@
+crypt-mt - minimal stream cipher based on a (thought to be) cryptographically-
+secure transformation of the Mersenne Twister PRNG
+
+This package assumes one has already placed a version of Geoff Kuenning's
+'mtwist' MT implementation in a directory parallel to this code, eg:
+
++
+|
++-mtwist-1.4/
+|
++-mt-crypt/
+
+An archive of Mr. Kuenning's mtwist version 1.4 is included along with this
+distribution for completeness' sake. It is licensed under the LGPL.
+
+To build, from mt-crypt/ just run 'make'. The makefile will attempt to build
+'mtc.c' and '../mtwist-1.4/mtwist.c', placing the executable in the same
+directory as 'Makefile'.
+
+Build tested on cygwin under Windows 7 32-bit only at time of writing.
+
+Usage
+-----
+$ mtc {key} <plaintext >ciphertext
+
+** NOTE this program will use a DEFAULT KEY (see mtc.c) if none is supplied.
+
+** ALSO NOTE the key, if shorter than that required to fully initialize the MT
+PRNG state (624 32-bit words, will be expanded via simple repetition to fill
+said state. A more secure method generating more 'random' initial state, such
+as iteratively generating SHA1 hashes on the supplied key, then on each
+preceding SHA1 and concatenating those hashes to fill the entire state
+would likely be a better way to initialize the PRNG.
+
+-Russ Magee (rmagee@gmail.com)
+

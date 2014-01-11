@@ -1,31 +1,43 @@
 /* -*- C -*- ****************************************************************
  *
- *  System        : 
- *  Module        : 
- *  Object Name   : $RCSfile$
- *  Revision      : $Revision$
- *  Date          : $Date$
- *  Author        : $Author$
+ *  System        : crypt-mt
+ *  Module        : mtc.c
  *  Created By    : Russ Magee
  *  Created       : Thu Jan 9 16:43:06 2014
- *  Last Modified : <140110.1714>
+ *  Last Modified : <140110.2043>
  *
  *  Description	
  *
- *  Notes
+ *  An extremely minimal implementation of a cryptMT (-like) stream cipher
+ *  using a nonlinear transformation (multiplication) and MSB extraction
+ *  from a 32-bit accumulator generated using the Mersenne-Twister PRNG.
+ *  
+ *  For more information see the paper
+ *  "Cryptographic Mersenne Twister and Fubuki Stream/Block Cipher",
+ *  by Makoto Matsumoto, Takuji Nishimura, Mariko Hagita and Matsuo Saito
+ *  [http://eprint.iacr.org/2005/165.pdf]
+ * 
  *
- *  History
- *	
+ *  Notes
+ * 
+ *  This implementation is implemented without any consultation of the
+ *  paper's authors, and no endorsement from said authors is implied. No
+ *  claim of compatibility with other 'cryptMT' implementations is claimed
+ *  nor is any FITNESS FOR A GIVEN PURPOSE claimed or implied by the author
+ *  (Russ Magee).
+ * 
+ *  This program makes use of the Mersenne-Twister library 'mtwist.c',
+ *  version 1.4 or newer, written by Geoff Kuenning, and licensed under
+ *  the LGPL, available here:
+ *  [http://www.cs.hmc.edu/~geoff/mtwist.html]
+ *
  ****************************************************************************
  *
- *  Copyright (c) 2014 Russ Magee.
+ *  Copyright (c) 2014 Russ Magee. Placed under the GPL v3 or newer, see
+ *  'gpl.txt' distributed with this source code.
  * 
  *  All Rights Reserved.
  * 
- * This  document  may  not, in  whole  or in  part, be  copied,  photocopied,
- * reproduced,  translated,  or  reduced to any  electronic  medium or machine
- * readable form without prior written consent from Russ Magee.
- *
  ****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
