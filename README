@@ -19,6 +19,25 @@ directory as 'Makefile'.
 
 Build tested on cygwin under Windows 7 32-bit only at time of writing.
 
+Security
+--------
+The randomness of the resulting encrypted stream passes the 'randstdev'
+randomness test tool
+
+[http://sourceforge.net/projects/randstdev]
+
+... when encrypting a test text file of 'War and Peace' as supplied
+from archive.org and included in this distribution:
+
+$ ../randstdev/programs/randstdev.exe <wrnpc11.txt
+FAIL Average = 0.000000 +- 0.000000
+
+$ ./mtc <wrnpc11.txt >wrnpc11.txt.mtc
+
+$ ../randstdev/programs/randstdev.exe <wrnpc11.txt.mtc
+PASS Average = 256.020320 +- 2.281723
+
+
 Usage
 -----
 $ mtc {key} <plaintext >ciphertext

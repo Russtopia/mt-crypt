@@ -4,7 +4,7 @@
  *  Module        : mtc.c
  *  Created By    : Russ Magee
  *  Created       : Thu Jan 9 16:43:06 2014
- *  Last Modified : <140110.2043>
+ *  Last Modified : <140110.2100>
  *
  *  Description	
  *
@@ -67,14 +67,19 @@ void mtc_init(exec_ctx* ctx)
 
 void mtc_set_key(exec_ctx* ctx, char_t key[])
 {
-    /* TODO: Use SHA-1 or greater to generate full
-     * 624-word state vector for seedfull() */
-    /* TODO: bounds enforcement on input data or
-     * generated vector */
     uint32_t iv[MT_STATE_SIZE] = {0U};
     uint8_t *ptemp = (uint8_t *)iv;
     uint32_t bytes_to_copy = MT_STATE_SIZE * sizeof(uint32_t);
     
+    /* If key supplied is less than the 624*sizeof(int32_t)
+     * (which is likely the case), expand it to fill the entire
+     * Mersenne Twister state buffer. For now this is just done
+     * via simple repeated concatenation of the key until the
+     * entire state buffer is filled. A better way might be to
+     * take SHA1(key), copy that to state; then repeatedly SHA1()
+     * that hash and all subsequent hashes until the buffer is
+     * filled.
+     */
     while( bytes_to_copy > 0 ) {
         if( strlen(key) <= bytes_to_copy ) {
             memcpy(ptemp, (uint32_t*)key, strlen(key));
