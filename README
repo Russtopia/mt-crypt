@@ -1,4 +1,4 @@
-crypt-mt - minimal stream cipher based on a (thought to be) cryptographically-
+mt-crypt - minimal stream cipher based on a (thought to be) cryptographically-
 secure transformation of the Mersenne Twister PRNG
 
 This package assumes one has already placed a version of Geoff Kuenning's
@@ -37,6 +37,15 @@ $ ./mtc <wrnpc11.txt >wrnpc11.txt.mtc
 $ ../randstdev/programs/randstdev.exe <wrnpc11.txt.mtc
 PASS Average = 256.020320 +- 2.281723
 
+Attacks
+-------
+Attack analyses have been performed on cryptMT and one should consider the
+following:
+[http://cr.yp.to/streamciphers/cryptmt/080.pdf]
+
+This paper posits a 'distinguisher', which lets one possibly detect the use
+of the MT PRNG as the basis for cryptoMT enciphered streams; but it is not
+a key recovery attack as of yet.
 
 Usage
 -----
