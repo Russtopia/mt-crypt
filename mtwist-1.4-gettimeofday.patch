@@ -1,0 +1,16 @@
+diff mtwist-1.4/mtwist.c mtwist-1.4.new/mtwist.c
+180a181,182
+> #undef USE_OBSOLETE_TZ /* define if using old gettimeofday() */
+> 
+534c536,544
+<     struct timezone	tz;		/* Dummy for gettimeofday */
+---
+> /**
+>   * struct timezone is considered obsolete; NULL should be passed to gettimeofday() in modern libraries.
+>   * -rlm 2014-01-23
+>   */
+> #ifdef USE_OBSOLETE_TZ
+>     struct timezone     tz;             /* Dummy for gettimeofday */
+> #else
+>     void* tz = NULL;
+> #endif 
