@@ -30,7 +30,7 @@
 #
 ##############################################################################
 
-MTWIST = ../mtwist-1.4
+MTWIST = mtwist-1.5
 
 CC = gcc
 COPTS = -std=c99 -I$(MTWIST) $(BUILDFLAGS) -c

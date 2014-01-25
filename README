@@ -1,8 +1,9 @@
 mt-crypt - minimal stream cipher based on a (thought to be) cryptographically-
 secure transformation of the Mersenne Twister PRNG
 
-This package assumes one has already placed a version of Geoff Kuenning's
-'mtwist' MT implementation in a directory parallel to this code, eg:
+This package uses Geoff Kuenning's 'mtwist' MT implementation and assumes
+before building that it has been extracted in a directory parallel to this
+code, eg:
 
 +
 |
@@ -12,6 +13,13 @@ This package assumes one has already placed a version of Geoff Kuenning's
 
 An archive of Mr. Kuenning's mtwist version 1.4 is included along with this
 distribution for completeness' sake. It is licensed under the LGPL.
+
+---
+This package also makes use of the BSD-licensed freestanding SHA code
+authored by Aaron Gifford, v1.0.1.
+[http://www.aarongifford.com/computers/sha.html]
+
+---
 
 To build, from mt-crypt/ just run 'make'. The makefile will attempt to build
 'mtc.c' and '../mtwist-1.4/mtwist.c', placing the executable in the same
