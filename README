@@ -1,31 +1,33 @@
 mt-crypt - minimal stream cipher based on a (thought to be) cryptographically-
 secure transformation of the Mersenne Twister PRNG
 
-This package uses Geoff Kuenning's 'mtwist' MT implementation and assumes
-before building that it has been extracted in a directory parallel to this
-code, eg:
+This package uses Geoff Kuenning's 'mtwist' MT implementation
+[http://www.cs.hmc.edu/~geoff/mtwist.html]
+and
+the BSD-licensed freestanding SHA code authored by Aaron Gifford, v1.0.1
+[http://www.aarongifford.com/computers/sha.html]
 
+... and assumes prior to building that these have been extracted into
+subdirectories:
+---
 +
 |
 +-mtwist-1.4/
 |
++-sha2-1.0.1/
+|
 +-mt-crypt/
 
-An archive of Mr. Kuenning's mtwist version 1.4 is included along with this
-distribution for completeness' sake. It is licensed under the LGPL.
-
----
-This package also makes use of the BSD-licensed freestanding SHA code
-authored by Aaron Gifford, v1.0.1.
-[http://www.aarongifford.com/computers/sha.html]
-
----
+Archives of mtwist-1.5 and sha2-1.0.1 are included along with this
+distribution for completeness' sake; please refer to their respective
+licenses.
 
 To build, from mt-crypt/ just run 'make'. The makefile will attempt to build
-'mtc.c' and '../mtwist-1.4/mtwist.c', placing the executable in the same
-directory as 'Makefile'.
+'mtc.c', placing the executable in the same directory as 'Makefile'.
 
-Build tested on cygwin under Windows 7 32-bit only at time of writing.
+Build tested on cygwin under Windows 7 (32-bit), Mac OSX 10.6.x (x86_64) and
+Linux.
+
 
 Security
 --------
@@ -37,13 +39,15 @@ randomness test tool
 ... when encrypting a test text file of 'War and Peace' as supplied
 from archive.org and included in this distribution:
 
-$ ../randstdev/programs/randstdev.exe <wrnpc11.txt
-FAIL Average = 0.000000 +- 0.000000
-
 $ ./mtc <wrnpc11.txt >wrnpc11.txt.mtc
 
-$ ../randstdev/programs/randstdev.exe <wrnpc11.txt.mtc
-PASS Average = 256.020320 +- 2.281723
+russtopia@rlm-nb3 ~/enc-prgs/mt-crypt
+$ randstdev/programs/randstdev.exe <wrnpc11.txt
+FAIL Average = 0.000000 +- 0.000000
+
+russtopia@rlm-nb3 ~/enc-prgs/mt-crypt
+$ randstdev/programs/randstdev.exe <wrnpc11.txt.mtc
+PASS Average = 256.019155 +- 2.213782
 
 Attacks
 -------
@@ -60,13 +64,6 @@ Usage
 $ mtc {key} <plaintext >ciphertext
 
 ** NOTE this program will use a DEFAULT KEY (see mtc.c) if none is supplied.
-
-** ALSO NOTE the key, if shorter than that required to fully initialize the MT
-PRNG state (624 32-bit words, will be expanded via simple repetition to fill
-said state. A more secure method generating more 'random' initial state, such
-as iteratively generating SHA1 hashes on the supplied key, then on each
-preceding SHA1 and concatenating those hashes to fill the entire state
-would likely be a better way to initialize the PRNG.
 
 -Russ Magee (rmagee@gmail.com)
 

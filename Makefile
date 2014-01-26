@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Russ Magee
 #  Created       : Fri Jan 10 16:33:53 2014
-#  Last Modified : <140110.1701>
+#  Last Modified : <140125.1857>
 #
 #  Description	
 #
@@ -31,15 +31,16 @@
 ##############################################################################
 
 MTWIST = mtwist-1.5
+SHALIB = sha2-1.0.1
 
 CC = gcc
-COPTS = -std=c99 -I$(MTWIST) $(BUILDFLAGS) -c
+COPTS = -std=c99 -I$(MTWIST) -I$(SHALIB) $(BUILDFLAGS) -c
 
 LC = gcc
 LOPTS = -std=c99
 
 OBJS = mtc.o
-LIBS = $(MTWIST)/mtwist.o
+LIBS = $(MTWIST)/mtwist.o $(SHALIB)/sha2.o
 
 all: mtc
 

@@ -4,7 +4,7 @@
  *  Module        : mtc.c
  *  Created By    : Russ Magee
  *  Created       : Thu Jan 9 16:43:06 2014
- *  Last Modified : <140110.2100>
+ *  Last Modified : <140125.1942>
  *
  *  Description	
  *
@@ -27,7 +27,7 @@
  *  (Russ Magee).
  * 
  *  This program makes use of the Mersenne-Twister library 'mtwist.c',
- *  version 1.4 or newer, written by Geoff Kuenning, and licensed under
+ *  version 1.5 or newer, written by Geoff Kuenning, and licensed under
  *  the LGPL, available here:
  *  [http://www.cs.hmc.edu/~geoff/mtwist.html]
  *
@@ -48,6 +48,7 @@
 #define MT_GENERATE_CODE_IN_HEADER 0
 
 #include "mtwist.h"
+#include "sha2.h"
 
 static const char rcsid[] = "@(#) : $Id$";
 
@@ -65,29 +66,47 @@ void mtc_init(exec_ctx* ctx)
     memset(&ctx->mts, 0, sizeof(mt_state));
 }
 
+
+uint8_t* mtc_sha512_digest(const uint8_t * data, size_t len, uint8_t digest[SHA512_DIGEST_LENGTH]) {
+    SHA512_CTX context;
+    
+    SHA512_Init(&context);
+    SHA512_Update(&context, data, len);
+    SHA512_Final(digest, &context);
+    return digest;
+}
+
 void mtc_set_key(exec_ctx* ctx, char_t key[])
 {
     uint32_t iv[MT_STATE_SIZE] = {0U};
     uint8_t *ptemp = (uint8_t *)iv;
     uint32_t bytes_to_copy = MT_STATE_SIZE * sizeof(uint32_t);
     
-    /* If key supplied is less than the 624*sizeof(int32_t)
-     * (which is likely the case), expand it to fill the entire
-     * Mersenne Twister state buffer. For now this is just done
-     * via simple repeated concatenation of the key until the
-     * entire state buffer is filled. A better way might be to
-     * take SHA1(key), copy that to state; then repeatedly SHA1()
-     * that hash and all subsequent hashes until the buffer is
-     * filled.
+    /* Key supplied is likely less than the size of MT state
+     * ( 624*sizeof(int32_t) ); so we expand the key material
+     * to fill the entire Mersenne Twister state buffer.
+     * This is done by repeatedly generating and storing a
+     * sha512 hash of: first the key,
+     * then each previous partial MT state contents, until
+     * the state buffer is filled. So the MT seed looks like:
+     * H1 || H2(H1) || H3(H1 || H2) || H4(H1 || H2 || H3) || ...
+     * where H1 = sha512(key), H<n> = H(H1 .. Hn-1)
      */
+    uint8_t hashdata[SHA512_DIGEST_LENGTH] = {0u};
+    memcpy(ptemp, mtc_sha512_digest(key, strlen(key), hashdata),
+           sizeof(hashdata));
+    bytes_to_copy -= strlen(key);
+    ptemp += strlen(key);
     while( bytes_to_copy > 0 ) {
-        if( strlen(key) <= bytes_to_copy ) {
-            memcpy(ptemp, (uint32_t*)key, strlen(key));
-            bytes_to_copy -= strlen(key);
-            ptemp += strlen(key);
+        if( sizeof(hashdata) <= bytes_to_copy ) {
+            memcpy(ptemp, mtc_sha512_digest((uint8_t*)iv, ptemp-(uint8_t*)iv, hashdata),
+                   sizeof(hashdata));
+            bytes_to_copy -= sizeof(hashdata);
+            ptemp += sizeof(hashdata);
         }
         else {
-            memcpy(ptemp, (uint32_t*)key, bytes_to_copy);
+            memcpy(ptemp, mtc_sha512_digest((uint8_t*)iv, ptemp-(uint8_t*)iv, hashdata),
+                   bytes_to_copy);
             bytes_to_copy = 0U;
         }
     }
