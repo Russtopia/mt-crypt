@@ -1,0 +1,24 @@
+IDIRS = -I.
+
+CC = gcc
+COPTS = -std=c99 $(IDIRS) $(BUILDFLAGS) -c
+
+LC = gcc
+LOPTS = -std=c99
+
+OBJS = kiss-2011.o
+LIBS = $(KISSLIB)/kiss-2011.o
+
+all: kiss-2011
+
+%.o:%.c
+	$(CC) $(COPTS) -D__MAINTEST__ -o $@ $<
+
+kiss-2011: $(OBJS) $(LIBS)
+	$(LC) $(LOPTS) -o $@ $(OBJS) $(LIBS)
+
+.PHONY: clean
+
+clean:
+	$(RM) $(OBJS)
+

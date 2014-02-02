@@ -4,7 +4,7 @@
  *  Module        : mtc.c
  *  Created By    : Russ Magee
  *  Created       : Thu Jan 9 16:43:06 2014
- *  Last Modified : <140125.1942>
+ *  Last Modified : <140201.2015>
  *
  *  Description	
  *
@@ -49,10 +49,13 @@
 
 #include "mtwist.h"
 #include "sha2.h"
+#include "kiss-2011.h"
 
 static const char rcsid[] = "@(#) : $Id$";
 
 #define MIN(a,b) ((a) <= (b) ? (a) : (b))
+
+#define OPT_KISS 1u
 
 typedef char char_t;
 
@@ -68,7 +71,8 @@ void mtc_init(exec_ctx* ctx)
 }
 
 
-uint8_t* mtc_sha512_digest(const uint8_t * data, size_t len, uint8_t digest[SHA512_DIGEST_LENGTH]) {
+uint8_t*
+mtc_sha512_digest(const uint8_t * data, size_t len, uint8_t digest[SHA512_DIGEST_LENGTH]) {
     SHA512_CTX context;
     
     SHA512_Init(&context);
@@ -77,7 +81,8 @@ uint8_t* mtc_sha512_digest(const uint8_t * data, size_t len, uint8_t digest[SHA5
     return digest;
 }
 
-void mtc_set_key(exec_ctx* ctx, char_t key[])
+void
+mtc_set_key(exec_ctx* ctx, char_t key[])
 {
     uint32_t iv[MT_STATE_SIZE] = {0U};
     uint8_t *ptemp = (uint8_t *)iv;
@@ -112,11 +117,17 @@ void mtc_set_key(exec_ctx* ctx, char_t key[])
             bytes_to_copy = 0U;
         }
     }
-    
     mts_seedfull(&ctx->mts, iv);
+
+    
+    if( ctx->opts & OPT_KISS ) {
+        randk_seed_manual( ((uint64_t)iv[MT_STATE_SIZE-2]<<32) +
+                           iv[MT_STATE_SIZE-1]);
+    }
 }
 
-void mtc_emit_values(exec_ctx* ctx, uint32_t num)
+void
+mtc_emit_values(exec_ctx* ctx, uint32_t num)
 {
     for(uint32_t index = 0U; index < num; index++) {
         printf("v: %lu\n", mts_lrand(&ctx->mts));
@@ -124,33 +135,47 @@ void mtc_emit_values(exec_ctx* ctx, uint32_t num)
     printf("Done.\n");
 }
 
-void mtc_prime_for_crypto(exec_ctx* ctx) {
+void
+mtc_prime_for_crypto(exec_ctx* ctx) {
     ctx->accum = 1U;
     uint32_t prime_rounds = 10000u;
     
     while( --prime_rounds > 0u ) {
         ctx->accum = ctx->accum * (mts_lrand(&ctx->mts) | 1u);
     }
+    
+    if( ctx->opts & OPT_KISS ) {
+        randk_warmup(1000u + mts_lrand(&ctx->mts) % 9000u);
+    }
 }
 
-uint8_t mtc_encrypt(exec_ctx* ctx, uint8_t pt) {
+uint8_t
+mtc_encrypt(exec_ctx* ctx, uint8_t pt) {
     uint8_t ct = pt;
-#ifndef _BARE_MT_OUTPUT
+    
     /* TODO */
     ct = ((ctx->accum >> 24) & 0xFF) ^ pt;
     ctx->accum = ctx->accum * (mts_lrand(&ctx->mts) | 1u);
-#else
-    ct = ct ^ ((mts_lrand(&ctx->mts) >> 24) & 0xFF);
-#endif
+    
+    if( ctx->opts & OPT_KISS ) {
+        uint64_t r = randk();
+//        fprintf(stderr, "r:%lu\n", r);
+        if( (ctx->accum >> 16) < (r>>56) ) {
+            ctx->accum = ctx->accum + ((r & 0xFF00)>>8u);
+//            fprintf(stderr, "spooging accum:%l\n", ctx->accum);
+        }
+    }
     return ct;
 }
 
-uint8_t mtc_decrypt(exec_ctx* ctx, uint8_t ct) {
+uint8_t
+mtc_decrypt(exec_ctx* ctx, uint8_t ct) {
     /* encrypt and decrypt are identical, invertible ops */
     return mtc_encrypt(ctx, ct);
 }
 
-int32_t main(int32_t argc, char_t *argv[])
+int32_t
+main(int32_t argc, char_t *argv[])
 {
     exec_ctx ctx;
     uint8_t inbyte = 0u;
@@ -168,13 +193,18 @@ int32_t main(int32_t argc, char_t *argv[])
 #endif
     mtc_init(&ctx);
     if( argv[1] != NULL ) {
-        key = argv[1];
+        ctx.opts = argv[1][0] - '@';
     }
     
+    if( argv[2] != NULL ) {
+        key = argv[1];
+    }
     mtc_set_key(&ctx, key);
+
 #if 0
     mtc_emit_values(&ctx, 3200);
 #else
+    
     mtc_prime_for_crypto(&ctx);
     
     while( (stat = getc(stdin)) != EOF ) {

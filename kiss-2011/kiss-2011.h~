@@ -1,0 +1,21 @@
+#ifndef __KISS-2011_H
+#define __KISS-2011_H
+
+#if defined(__cplusplus) || defined(c_plusplus)
+extern "C" {
+#endif
+
+typedef uint64_t u64;
+
+u64 randk(void);
+void randk_seed(void);
+void randk_reset(void);
+u64 B64MWC(void);
+void randk_seed_manual(u64 seed);
+void randk_warmup(int rounds);
+
+
+#if defined(__cplusplus) || defined(c_plusplus)
+}
+#endif
+#endif
