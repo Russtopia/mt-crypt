@@ -57,6 +57,7 @@ static const char rcsid[] = "@(#) : $Id$";
 typedef char char_t;
 
 typedef struct _exec_context {
+    uint32_t opts;
     mt_state mts;
     uint32_t accum;
 } exec_ctx;
@@ -81,16 +82,17 @@ void mtc_set_key(exec_ctx* ctx, char_t key[])
     uint32_t iv[MT_STATE_SIZE] = {0U};
     uint8_t *ptemp = (uint8_t *)iv;
     uint32_t bytes_to_copy = MT_STATE_SIZE * sizeof(uint32_t);
-    
     /* Key supplied is likely less than the size of MT state
      * ( 624*sizeof(int32_t) ); so we expand the key material
      * to fill the entire Mersenne Twister state buffer.
      * This is done by repeatedly generating and storing a
      * sha512 hash of: first the key,
      * then each previous partial MT state contents, until
-     * the state buffer is filled. So the MT seed looks like:
-     * H1 || H2(H1) || H3(H1 || H2) || H4(H1 || H2 || H3) || ...
-     * where H1 = sha512(key), H<n> = H(H1 .. Hn-1)
+     * the state buffer is filled:
+     * 
+     * MT_state := Hn
+     * where H1 = sha512(key),
+     *       H2 = sha512(H1 || H2), H(n>2) = sha512(H1 || .. Hn-1)
      */
     uint8_t hashdata[SHA512_DIGEST_LENGTH] = {0u};
     memcpy(ptemp, mtc_sha512_digest(key, strlen(key), hashdata),
