@@ -1,0 +1,112 @@
+2014-02-02: experiments mixing in KISS-2011 into accum state
+1.
+        uint64_t r = randk();
+        if( (ctx->accum >> ctx->optarg1) < (r>>56) ) {
+            ctx->accum = ctx->accum + ((r & 0xFF00)>>8u);
+        }
+-7 and 9 are best 2:
+PASS Average = 256.017711 +- 2.131635
+PASS Average = 256.019275 +- 2.221487
+PASS Average = 256.018069 +- 2.150358
+
+2.
+        uint64_t r = randk();
+        if( (ctx->accum >> ctx->optarg1) < (r>>56) ) {
+            ctx->accum = (ctx->accum & 0x00ffffffu) | (r & 0xff000000);
+        }
+-11 and 13 are best 2:
+PASS Average = 256.016726 +- 2.071295
+PASS Average = 256.017493 +- 2.118008
+
+3.
+        uint64_t r = randk();
+        if( (ctx->accum >> ctx->optarg1) < (r>>56) ) {
+            ctx->accum ^= (r & 0xff000000u);
+        }
+-11,13 are best 2:
+PASS Average = 256.016726 +- 2.071295
+PASS Average = 256.017493 +- 2.118008
+** NOTE exact results of 2. above!
+
+4.
+        uint64_t r = randk();
+        if( (ctx->accum >> ctx->optarg1) < (r>>56) ) {
+            ctx->accum ^= (r & 0x0ff00000u);
+        }
+PASS Average = 256.024128 +- 2.484242
+PASS Average = 256.024128 +- 2.484242
+PASS Average = 256.024128 +- 2.484242
+PASS Average = 256.019602 +- 2.239514
+PASS Average = 256.019602 +- 2.239514
+PASS Average = 256.019013 +- 2.205083
+PASS Average = 256.024433 +- 2.504407
+PASS Average = 256.019559 +- 2.238367
+PASS Average = 256.016213 +- 2.038511
+PASS Average = 256.018455 +- 2.173315
+PASS Average = 256.019043 +- 2.209635
+PASS Average = 256.021732 +- 2.359890
+PASS Average = 256.020171 +- 2.270498
+PASS Average = 256.019991 +- 2.258685
+PASS Average = 256.022267 +- 2.393090
+FAIL Average = 256.029880 +- 2.785602
+
+5.
+        uint64_t r = randk();
+        if( (ctx->accum >> ctx->optarg1) < (r>>56) ) {
+            ctx->accum ^= (r & 0x00ff00000u);
+        }
+PASS Average = 256.024128 +- 2.484242
+PASS Average = 256.024128 +- 2.484242
+PASS Average = 256.024128 +- 2.484242
+PASS Average = 256.019602 +- 2.239514
+PASS Average = 256.019602 +- 2.239514
+PASS Average = 256.019013 +- 2.205083
+PASS Average = 256.024433 +- 2.504407
+PASS Average = 256.019559 +- 2.238367
+PASS Average = 256.016213 +- 2.038511
+PASS Average = 256.018455 +- 2.173315
+PASS Average = 256.019043 +- 2.209635
+PASS Average = 256.021732 +- 2.359890
+PASS Average = 256.020171 +- 2.270498
+PASS Average = 256.019991 +- 2.258685
+PASS Average = 256.022267 +- 2.393090
+FAIL Average = 256.029880 +- 2.785602
+* NOTE identical to 4. above
+
+6.
+        uint64_t r = randk();
+        if( (ctx->accum >> ctx->optarg1) < (r>>56) ) {
+            ctx->accum ^= (r & 0xf0f00000u);
+        }
+PASS Average = 256.024128 +- 2.484242
+PASS Average = 256.024128 +- 2.484242
+PASS Average = 256.024128 +- 2.484242
+PASS Average = 256.020801 +- 2.311230
+PASS Average = 256.020801 +- 2.311230
+** PASS Average = 256.015682 +- 2.004986
+PASS Average = 256.018210 +- 2.160514
+PASS Average = 256.020201 +- 2.275057
+PASS Average = 256.018180 +- 2.156849
+PASS Average = 256.018345 +- 2.168244
+PASS Average = 256.020356 +- 2.284144
+PASS Average = 256.018065 +- 2.149608
+PASS Average = 256.022118 +- 2.377764
+PASS Average = 256.018481 +- 2.174919
+FAIL Average = 256.026188 +- 2.597358
+FAIL Average = 256.033354 +- 2.956605
+
+**: Best of the above so far. Its 'ent' stats are also superior:
+[ent -b]
+Entropy = 1.000000 bits per bit.
+
+Optimum compression would reduce the size
+of this 26359400 bit file by 0 percent.
+
+Chi square distribution for 26359400 samples is 2.06, and randomly
+would exceed this value 15.10 percent of the times.
+
+Arithmetic mean value of data bits is 0.4999 (0.5 = random).
+Monte Carlo value for Pi is 3.143307706 (error 0.05 percent).
+Serial correlation coefficient is -0.000024 (totally uncorrelated = 0.0).
+
+

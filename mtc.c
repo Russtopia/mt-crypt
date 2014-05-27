@@ -4,7 +4,7 @@
  *  Module        : mtc.c
  *  Created By    : Russ Magee
  *  Created       : Thu Jan 9 16:43:06 2014
- *  Last Modified : <140201.2015>
+ *  Last Modified : <140202.1517>
  *
  *  Description	
  *
@@ -61,6 +61,7 @@ typedef char char_t;
 
 typedef struct _exec_context {
     uint32_t opts;
+    uint32_t optarg1;
     mt_state mts;
     uint32_t accum;
 } exec_ctx;
@@ -159,9 +160,14 @@ mtc_encrypt(exec_ctx* ctx, uint8_t pt) {
     
     if( ctx->opts & OPT_KISS ) {
         uint64_t r = randk();
-//        fprintf(stderr, "r:%lu\n", r);
-        if( (ctx->accum >> 16) < (r>>56) ) {
-            ctx->accum = ctx->accum + ((r & 0xFF00)>>8u);
+        //        fprintf(stderr, "r:%lu\n", r);
+        // The following are empirically derived shifts and masks.
+        // See NOTES.txt for some comparisons of similar trials
+        // ctx->optarg1 == 6u, ^= r & 0xf0f00000u has highest entropy
+        // and lowest bit correlation according to 'ent' as well as
+        // lowest deviation according to randstdev.
+        if( (ctx->accum >> ctx->optarg1) < (r>>56 & 0x0FFu) ) {
+            ctx->accum ^= (r & 0xf0f00000u);
 //            fprintf(stderr, "spooging accum:%l\n", ctx->accum);
         }
     }
@@ -186,19 +192,33 @@ main(int32_t argc, char_t *argv[])
           "vector of Mersenne Twister is non-zero; otherwise apparently the "
           "algorithm collapses to outputting 0 after a small number of "
           "calls to mts_lrand().";
-    char_t* key = defkey;
+    char_t* key;
     
 #ifdef _BARE_MT_OUTPUT
     fprintf(stderr, "*** WARNING WARNING *** Bare MT PRNG Mode ***\n");
 #endif
     mtc_init(&ctx);
-    if( argv[1] != NULL ) {
-        ctx.opts = argv[1][0] - '@';
+    if( argv[3] != NULL ) {
+        ctx.optarg1 = atoi(argv[3]);
+    }
+    else {
+        ctx.optarg1 = 16u;
     }
     
     if( argv[2] != NULL ) {
+        ctx.opts = argv[2][0] - '@';
+    }
+    else {
+        ctx.opts = 0u;
+    }
+    
+    if( argv[1] != NULL ) {
         key = argv[1];
     }
+    else {
+        key = defkey;
+    }
+    
     mtc_set_key(&ctx, key);
 
 #if 0
