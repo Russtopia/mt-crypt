@@ -1,0 +1,1 @@
+A very minimal implementation of the cryptMT stream cipher as described in the paper: "Cryptographic Mersenne Twister and Fubuki Stream/Block Cipher" (see links)
