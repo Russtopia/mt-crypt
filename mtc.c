@@ -4,7 +4,7 @@
  *  Module        : mtc.c
  *  Created By    : Russ Magee
  *  Created       : Thu Jan 9 16:43:06 2014
- *  Last Modified : <140202.1517>
+ *  Last Modified : <151108.1610>
  *
  *  Description	
  *
@@ -53,7 +53,19 @@
 
 static const char rcsid[] = "@(#) : $Id$";
 
-#define MIN(a,b) ((a) <= (b) ? (a) : (b))
+#if defined(__WIN32__)
+/* Suppress bullshit win32 text/bin file I/O behaviour */
+
+/* Old online docs for gnuWin32 say this should work, but it
+ * causes segfault when built with msys64, for me at least.
+ * (Nov 2015)
+ * the _CRT_fmode may not work either.. setmode() is called for
+ * stdin and stdout just to be safe early in main()
+ * -rlm 2015-11-08
+ */
+/*int _fmode = _O_BINARY;*/
+int _CRT_fmode = _O_BINARY;
+#endif
 
 #define OPT_KISS 1u
 
@@ -71,9 +83,7 @@ void mtc_init(exec_ctx* ctx)
     memset(&ctx->mts, 0, sizeof(mt_state));
 }
 
-
-uint8_t*
-mtc_sha512_digest(const uint8_t * data, size_t len, uint8_t digest[SHA512_DIGEST_LENGTH]) {
+uint8_t* mtc_sha512_digest(const uint8_t * data, size_t len, uint8_t digest[SHA512_DIGEST_LENGTH]) {
     SHA512_CTX context;
     
     SHA512_Init(&context);
@@ -82,8 +92,21 @@ mtc_sha512_digest(const uint8_t * data, size_t len, uint8_t digest[SHA512_DIGEST
     return digest;
 }
 
-void
-mtc_set_key(exec_ctx* ctx, char_t key[])
+#if defined(DEBUG)
+void dbg_dump_iv(uint8_t *iv, uint32_t len)
+{
+    fprintf(stderr, "Key:");
+    for(int idx = 0u; idx < len; idx++) {
+        if( idx % 16 == 0 ) {
+            fputs("\n", stderr);
+        }
+        fprintf(stderr, "%02x ", iv[idx]);
+    }
+    fputs("\n", stderr);
+}
+#endif /* DEBUG */
+
+void mtc_set_key(exec_ctx* ctx, char_t key[])
 {
     uint32_t iv[MT_STATE_SIZE] = {0U};
     uint8_t *ptemp = (uint8_t *)iv;
@@ -118,6 +141,9 @@ mtc_set_key(exec_ctx* ctx, char_t key[])
             bytes_to_copy = 0U;
         }
     }
+#if defined(DEBUG)
+    dbg_dump_iv((char_t*)iv, MT_STATE_SIZE*sizeof(uint32_t));
+#endif
     mts_seedfull(&ctx->mts, iv);
 
     
@@ -127,17 +153,7 @@ mtc_set_key(exec_ctx* ctx, char_t key[])
     }
 }
 
-void
-mtc_emit_values(exec_ctx* ctx, uint32_t num)
-{
-    for(uint32_t index = 0U; index < num; index++) {
-        printf("v: %lu\n", mts_lrand(&ctx->mts));
-    }
-    printf("Done.\n");
-}
-
-void
-mtc_prime_for_crypto(exec_ctx* ctx) {
+void mtc_prime_for_crypto(exec_ctx* ctx) {
     ctx->accum = 1U;
     uint32_t prime_rounds = 10000u;
     
@@ -152,10 +168,10 @@ mtc_prime_for_crypto(exec_ctx* ctx) {
 
 uint8_t
 mtc_encrypt(exec_ctx* ctx, uint8_t pt) {
-    uint8_t ct = pt;
+    uint8_t ct;
     
     /* TODO */
-    ct = ((ctx->accum >> 24) & 0xFF) ^ pt;
+    ct = ((ctx->accum >> 24) & 0xFFu) ^ pt;
     ctx->accum = ctx->accum * (mts_lrand(&ctx->mts) | 1u);
     
     if( ctx->opts & OPT_KISS ) {
@@ -176,7 +192,6 @@ mtc_encrypt(exec_ctx* ctx, uint8_t pt) {
 
 uint8_t
 mtc_decrypt(exec_ctx* ctx, uint8_t ct) {
-    /* encrypt and decrypt are identical, invertible ops */
     return mtc_encrypt(ctx, ct);
 }
 
@@ -184,19 +199,17 @@ int32_t
 main(int32_t argc, char_t *argv[])
 {
     exec_ctx ctx;
-    uint8_t inbyte = 0u;
+    uint8_t inbyte, outbyte = 0u;
     int32_t stat = 0;
     
-    char_t defkey[] = "This is a default test key. It should be very long... "
-          "long enough, in fact, to ensure the entire 624 uint32_t state "
-          "vector of Mersenne Twister is non-zero; otherwise apparently the "
-          "algorithm collapses to outputting 0 after a small number of "
-          "calls to mts_lrand().";
     char_t* key;
-    
-#ifdef _BARE_MT_OUTPUT
-    fprintf(stderr, "*** WARNING WARNING *** Bare MT PRNG Mode ***\n");
+
+#if defined(_WIN32)
+    /* Suppress bullshit win32 text/bin file I/O behaviour */
+    setmode(fileno(stdout),O_BINARY);
+    setmode(fileno(stdin),O_BINARY);
 #endif
+
     mtc_init(&ctx);
     if( argv[3] != NULL ) {
         ctx.optarg1 = atoi(argv[3]);
@@ -212,26 +225,21 @@ main(int32_t argc, char_t *argv[])
         ctx.opts = 0u;
     }
     
-    if( argv[1] != NULL ) {
-        key = argv[1];
+    if( argv[1] == NULL ) {
+        puts("No key arg supplied, exiting.");
+        return 1;
     }
     else {
-        key = defkey;
-    }
+        key = argv[1];
     
-    mtc_set_key(&ctx, key);
+        mtc_set_key(&ctx, key);
+        mtc_prime_for_crypto(&ctx);
 
-#if 0
-    mtc_emit_values(&ctx, 3200);
-#else
-    
-    mtc_prime_for_crypto(&ctx);
-    
-    while( (stat = getc(stdin)) != EOF ) {
-        inbyte = (uint8_t)stat;
-        putc(mtc_encrypt(&ctx, inbyte), stdout);
+        while( fread(&inbyte, 1, 1, stdin) == 1 ) {
+            outbyte = mtc_encrypt(&ctx, inbyte);
+            (void)fwrite(&outbyte, 1, 1, stdout);
+        }
+        fflush(stdout);
     }
-#endif
     return 0;
 }
-
